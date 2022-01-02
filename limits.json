@@ -1,0 +1,23 @@
+{
+  "costs": [
+    {
+      "administration": [
+        {
+          "rent": 1000,
+          "water": 300,
+          "gas": 800,
+          "diesel": 2000,
+          "salary": 12345
+        }
+      ],
+      "investment": [
+        {
+          "courses": 500,
+          "crypto": 100,
+          "machinery": 5000
+        }
+      ],
+      "other expenses": 10000
+    }
+  ]
+}
