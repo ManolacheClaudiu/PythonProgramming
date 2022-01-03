@@ -8,6 +8,7 @@ from mysql.connector import Error
 import os
 import json
 import pandas as pd
+import time
 
 
 def create_connection(host_name, user_name, user_password, database_name):
@@ -45,6 +46,16 @@ def execute_query(connection_name, query):
         print(f"Error: '{err}'")
 
 
+def select_query(connection_name, query):
+    cursor = connection_name.cursor()
+    try:
+        cursor.execute(query)
+        select = cursor.fetchall()
+        return select
+    except Error as err:
+        print(f"Error: '{err}'")
+
+
 def insert_into_table(table, value1, value2, value3, value4):
     sql = "INSERT INTO " + table + " VALUES (" + str(value1) + ", '" + value2 + "'," + value3 + ",'" + value4 + "' )"
     execute_query(connection, sql)
@@ -55,6 +66,107 @@ def insert_into_table2(table, value1, value2, value3, value4, value5, value6, va
         value4) + ",'" + value5 + \
           "' ," + str(value6) + ", '" + str(value7) + "' )"
     execute_query(connection, sql)
+
+
+def get_sum(category_name, connection_name):
+    sql_sum = "select sum(price) from invoice where category = '" + category_name + "'"
+    select_sum = select_query(connection_name, sql_sum)
+    return select_sum[0][0]
+
+
+def get_limit(category_name, connection_name):
+    sql_limit = "select amount from limits where category = '" + category_name + "'"
+    select_limit = select_query(connection_name, sql_limit)
+    return select_limit[0][0]
+
+
+def import_limits():
+    # json_data_limits = pd.DataFrame(columns=["name", "category", "total"])
+
+    file = open("limits.json", "r")
+    data = json.load(file)
+    administration = data['costs'][0]['administration']
+    investment = data['costs'][0]['investment']
+    other_expenses = data['costs'][0]['other expenses']
+    # print('Administration:')
+    index = 0
+    category = "administration"
+    for i in administration[0]:
+        amount = str(administration[0][i])
+        insert_into_table("limits", index, i, amount, category)
+        index = index + 1
+
+    # print('Investment:')
+    category = "investment"
+    for i in investment[0]:
+        amount = str(investment[0][i])
+        insert_into_table("limits", index, i, amount, category)
+        index = index + 1
+
+    # print('Other Expenses:', other_expenses)
+    amount = str(other_expenses)
+    category = "others"
+    insert_into_table("limits", index, "Other expenses", amount, category)
+
+
+def import_invoice(list_of_invoice_name, number_id):
+    path_to_json = 'invoices'
+    list_of_invoice = []
+    json_files = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]
+    json_data = pd.DataFrame(columns=["price", "category", "number", "month", "year", "day"])
+    print(json_files)
+    index = number_id
+    for js in json_files:
+        with open(os.path.join(path_to_json, js)) as json_file:
+            print("js:", js)
+            if js not in list_of_invoice_name:
+                list_of_invoice.append(js)
+                json_text = json.load(json_file)
+                price = json_text['price']
+                category = json_text['category']
+                number = json_text['number']
+                month = json_text['month']
+                year = json_text['year']
+                day = json_text['day']
+                insert_into_table2("invoice", index, price, category, number, month, year, day)
+                # here I push a list of data into a pandas DataFrame at row given by 'index'
+                json_data.loc[index] = [price, category, number, month, year, day]
+                index = index + 1
+    return index, list_of_invoice
+    # print(json_data)
+
+
+def verify_spent_money_amount():
+    category = "administration"
+    administration_spent = get_sum(category, connection)
+    administration_limit = get_limit(category, connection)
+    if administration_spent:
+        if administration_spent > administration_limit:
+            print("You spent more than you established on " + category)
+    print("On category " + category + " you have the limit " + str(administration_limit) + " and you spent " + str(
+        administration_spent))
+    category = "investment"
+    investment_spent = get_sum(category, connection)
+    investment_limit = get_limit(category, connection)
+    print("On category " + category + " you have the limit " + str(investment_limit) + " and you spent " + str(
+        investment_spent))
+    if investment_spent:
+        if investment_spent > investment_limit:
+            print("You spent more than you established on " + category)
+    category = "others"
+    others_spent = get_sum(category, connection)
+    others_limit = get_limit(category, connection)
+    print(
+        "On category " + category + " you have the limit " + str(others_limit) + " and you spent " + str(others_spent))
+    if others_spent:
+        if others_spent > others_limit:
+            print("You spent more than you established on " + category)
+
+    # print(category, get_sum(category, connection), get_limit(category, connection))
+    # category = "investment"
+    # print(category, get_sum(category, connection), get_limit(category, connection))
+    # category = "others"
+    # print(category, get_sum(category, connection), get_limit(category, connection))
 
 
 if __name__ == '__main__':
@@ -91,52 +203,14 @@ if __name__ == '__main__':
     execute_query(connection, create_invoice_table)
     execute_query(connection, create_limits_table)
 
-    json_data_limits = pd.DataFrame(columns=["name", "category", "total"])
+    import_limits()
 
-    file = open("limits.json", "r")
-    data = json.load(file)
-    administration = data['costs'][0]['administration']
-    investment = data['costs'][0]['investment']
-    otherExpenses = data['costs'][0]['other expenses']
-    print('Administration:')
-    index = 0
-    category = "administration"
-    for i in administration[0]:
-        amount = str(administration[0][i])
-        insert_into_table("limits", index, i, amount, category)
-        index = index + 1
-    print()
-
-    print('Investment:')
-    category = "investment"
-    for i in investment[0]:
-        amount = str(investment[0][i])
-        insert_into_table("limits", index, i, amount, category)
-        index = index + 1
-    print()
-
-    print('Other Expenses:', otherExpenses)
-    amount = str(otherExpenses)
-    category = "others"
-    insert_into_table("limits", index, "Other expenses", amount, category)
-
-    print()
-
-    path_to_json = 'invoices'
-    json_files = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]
-    json_data = pd.DataFrame(columns=["price", "category", "number", "month", "year", "day"])
-    for index, js in enumerate(json_files):
-        with open(os.path.join(path_to_json, js)) as json_file:
-            json_text = json.load(json_file)
-
-            price = json_text['price']
-            category = json_text['category']
-            number = json_text['number']
-            month = json_text['month']
-            year = json_text['year']
-            day = json_text['day']
-            insert_into_table2("invoice", index, price, category, number, month, year, day)
-            # here I push a list of data into a pandas DataFrame at row given by 'index'
-            json_data.loc[index] = [price, category, number, month, year, day]
-
-    print(json_data)
+    list_of_files_name = []
+    id_number = 0
+    while True:
+        id_invoice, file_list = import_invoice(list_of_files_name, id_number)
+        id_number = id_invoice
+        verify_spent_money_amount()
+        list_of_files_name.extend(file_list)
+        print("list_of_files_name", list_of_files_name)
+        time.sleep(15)
