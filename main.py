@@ -114,11 +114,11 @@ def import_invoice(list_of_invoice_name, number_id):
     list_of_invoice = []
     json_files = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]
     json_data = pd.DataFrame(columns=["price", "category", "number", "month", "year", "day"])
-    print(json_files)
+    # print(json_files)
     index = number_id
     for js in json_files:
         with open(os.path.join(path_to_json, js)) as json_file:
-            print("js:", js)
+            # print("js:", js)
             if js not in list_of_invoice_name:
                 list_of_invoice.append(js)
                 json_text = json.load(json_file)
@@ -142,7 +142,7 @@ def verify_spent_money_amount():
     administration_limit = get_limit(category, connection)
     if administration_spent:
         if administration_spent > administration_limit:
-            print("You spent more than you established on " + category)
+            print("YOU SPENT MOORE THAN YOU ESTABLISHED ON  " + category)
     print("On category " + category + " you have the limit " + str(administration_limit) + " and you spent " + str(
         administration_spent))
     category = "investment"
@@ -152,7 +152,7 @@ def verify_spent_money_amount():
         investment_spent))
     if investment_spent:
         if investment_spent > investment_limit:
-            print("You spent more than you established on " + category)
+            print("YOU SPENT MOORE THAN YOU ESTABLISHED ON " + category)
     category = "others"
     others_spent = get_sum(category, connection)
     others_limit = get_limit(category, connection)
@@ -160,7 +160,8 @@ def verify_spent_money_amount():
         "On category " + category + " you have the limit " + str(others_limit) + " and you spent " + str(others_spent))
     if others_spent:
         if others_spent > others_limit:
-            print("You spent more than you established on " + category)
+            print("YOU SPENT MOORE THAN YOU ESTABLISHED ON  " + category)
+    print()
 
     # print(category, get_sum(category, connection), get_limit(category, connection))
     # category = "investment"
@@ -212,5 +213,5 @@ if __name__ == '__main__':
         id_number = id_invoice
         verify_spent_money_amount()
         list_of_files_name.extend(file_list)
-        print("list_of_files_name", list_of_files_name)
+        # print("list_of_files_name", list_of_files_name)
         time.sleep(15)
