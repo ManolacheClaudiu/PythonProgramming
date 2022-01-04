@@ -170,6 +170,26 @@ def verify_spent_money_amount():
     # print(category, get_sum(category, connection), get_limit(category, connection))
 
 
+def select_category(connection_name):
+    sql_cat = "select distinct category from limits"
+    select_cat = select_query(connection_name, sql_cat)
+    return select_cat
+
+
+def verify_spent_money_amount2(connection_name):
+    category = select_category(connection_name)
+    for cat in category:
+        category_name = cat[0]
+        # print(category_name)
+        amount_spent = get_sum(category_name, connection_name)
+        amount_limit = get_limit(category_name, connection_name)
+        if amount_spent:
+            if amount_spent > amount_limit:
+                print("YOU SPENT MOORE THAN YOU ESTABLISHED ON  " + category_name)
+        print("On category " + category_name + " you have the limit " + str(amount_limit) + " and you spent " + str(
+            amount_spent))
+
+
 if __name__ == '__main__':
     connection = create_connection("localhost", "root", "12345678", "ExpenseAlert")
     # drop_database_if_exists = "DROP DATABASE IF EXISTS ExpenseAlert;"
@@ -208,10 +228,15 @@ if __name__ == '__main__':
 
     list_of_files_name = []
     id_number = 0
+    number_of_invoices = len(list_of_files_name)
     while True:
         id_invoice, file_list = import_invoice(list_of_files_name, id_number)
         id_number = id_invoice
-        verify_spent_money_amount()
-        list_of_files_name.extend(file_list)
+        # print(id_number,number_of_invoices)
+        if number_of_invoices < id_number:
+            verify_spent_money_amount2(connection)
+            list_of_files_name.extend(file_list)
+            number_of_invoices = len(list_of_files_name)
+            print()
         # print("list_of_files_name", list_of_files_name)
         time.sleep(15)
